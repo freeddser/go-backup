@@ -59,6 +59,10 @@ To list the backed-up files, use the following command:
 
 ## Logging
 The program logs backup status and errors to backup.log in the same directory as the program.
+```
+"enable_logging": true,  //log in to the file
+"enable_logging": false, //console
+```
 
 ##  Dependencies
 Ensure you have mysqldump and gzip installed on your system, as they are used for database backup and compression.

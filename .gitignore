@@ -1,5 +1,7 @@
 .idea/
 *.log
 main.exe
+go-backup.exe
+go-backup-linux-amd64
 
 

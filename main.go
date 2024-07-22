@@ -17,6 +17,7 @@ import (
 
 type DBConfig struct {
 	BackupTargetPath string   `json:"backup_target_path"`
+	EnableLogging    bool     `json:"enable_logging"`
 	DBLists          []DBInfo `json:"dblists"`
 }
 
@@ -30,14 +31,6 @@ type DBInfo struct {
 }
 
 func main() {
-	// Initialize logging
-	logFile, err := os.OpenFile("backup.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatalf("Failed to open log file: %v", err)
-	}
-	defer logFile.Close()
-	log.SetOutput(logFile)
-
 	// Define command-line arguments
 	action := flag.String("action", "", "Specify 'backup' to start backup or 'list' to list backed-up files")
 	concurrency := flag.String("concurrency", "3", "Specify the number of concurrent backups (default is 3)")
@@ -63,6 +56,19 @@ func main() {
 	}
 }
 
+func setupLogging(enableLogging bool) {
+	if enableLogging {
+		logFileName := time.Now().Format("20060102") + ".log"
+		logFile, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			log.Fatalf("Failed to open log file: %v", err)
+		}
+		log.SetOutput(logFile)
+	} else {
+		log.SetOutput(os.Stdout)
+	}
+}
+
 func startBackup(maxConcurrency int) {
 	// Read and parse JSON configuration file
 	file, err := os.Open("config.json")
@@ -77,6 +83,9 @@ func startBackup(maxConcurrency int) {
 	if err := json.Unmarshal(byteValue, &dbConfig); err != nil {
 		log.Fatalf("Failed to parse config file: %v", err)
 	}
+
+	// Setup logging based on config
+	setupLogging(dbConfig.EnableLogging)
 
 	// Ensure the backup target path exists
 	if err := os.MkdirAll(dbConfig.BackupTargetPath, os.ModePerm); err != nil {
@@ -106,12 +115,9 @@ func backupDatabase(db DBInfo, backupPath string) {
 	timestamp := time.Now().Format("20060102_150405")
 	sqlFilename := fmt.Sprintf("%s_%s_%s.sql", db.DBNumber, db.DBName, timestamp)
 	gzFilename := filepath.Join(backupPath, fmt.Sprintf("%s.gz", sqlFilename))
-	fmt.Println(sqlFilename)
-	fmt.Println(gzFilename)
+
 	cmd := exec.Command("mysqldump", "-h", db.DBHost, "-u", db.DBUser, "-p"+db.DBPassword, db.DBName)
 	gzipCmd := exec.Command("gzip")
-	fmt.Println(cmd)
-	fmt.Println(gzipCmd)
 
 	// Create a pipeline: mysqldump | gzip > file
 	pipeReader, pipeWriter := io.Pipe()
@@ -165,6 +171,9 @@ func listBackups() {
 	if err := json.Unmarshal(byteValue, &dbConfig); err != nil {
 		log.Fatalf("Failed to parse config file: %v", err)
 	}
+
+	// Setup logging based on config
+	setupLogging(dbConfig.EnableLogging)
 
 	files, err := ioutil.ReadDir(dbConfig.BackupTargetPath)
 	if err != nil {

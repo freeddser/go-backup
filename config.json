@@ -1,5 +1,6 @@
 {
   "backup_target_path": "/path/to/backup",
+  "enable_logging": false,
   "dblists": [
     {"db_number": "101", "db_name": "abc1", "db_user": "backupuser", "db_password": "password", "db_host": "127.0.0.1:3306", "remark": ""},
     {"db_number": "102", "db_name": "abc1", "db_user": "backupuser", "db_password": "password", "db_host": "127.0.0.1:3306", "remark": ""},
